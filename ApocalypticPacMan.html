@@ -1,0 +1,424 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacman Apocalypse</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    
+    let config = {
+        type: Phaser.AUTO,
+        width: window.innerWidth,//1400
+        height: window.innerHeight,//1200
+        physics: {
+            default: 'arcade',
+            arcade: {
+                // gravity: { y: 4 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+    
+    let borders;
+    let platforms;
+    let player;
+    let speed =60;
+    let cursors;
+    let score = 0;
+    let maxScore = 1070;
+    let maxScore2;
+    let level = 1;
+    let scoreText;
+
+    let game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('sky', 'assets/pacmanBG2.png');
+        this.load.image('orb', 'assets/orbs.png');
+        this.load.image('player', 'assets/player.png')
+        
+        for(let i = 1; i <= 23; i++){
+            this.load.image(`wall${i}`, `assets/walls/piece${i}.png`);
+        }
+        for(let i = 1; i < 10; i++){
+            this.load.image(`border${i}`, `assets/borders/border${i}.png`);
+        }
+        for(let i =1; i < 5; i++){
+            this.load.image(`enemy${i}`, `assets/enemy${i}.png`)
+        }
+        
+    //     this.load.spritesheet('dude', 'assets/dude.png', //spritesheet has the the images for the player running left, standing still, and running right
+    //     { frameWidth: 32, frameHeight: 48 }
+    // );
+    }
+
+    function create ()
+    {
+        // platforms.create(800, 1000, 'ground').setScale(4).refreshBody();
+        
+        this.add.image(800, 600, 'sky');
+        
+
+        borders = this.physics.add.staticGroup();
+        borders.create(295, 200, 'border1').setAlpha(0);//top left vertical border
+        borders.create(1310, 200, 'border1').setAlpha(0);//top right vertical border
+        borders.create(800, 32, 'border2').setAlpha(0);//top horizontal border
+        borders.create(805, 99, 'border3').setAlpha(0);//middle stick border
+        borders.create(392, 373, 'border4').setAlpha(0);//horizontal line next to T pointing to the right.
+        borders.create(1217, 370, 'border4').setAlpha(0);//symmetrical piece on right side of map
+        borders.create(392, 745, 'border4').setAlpha(0);//horizontal line above upside down L
+        borders.create(1217, 745, 'border4').setAlpha(0);//horizontal line above upside down L
+        borders.create(300, 840, 'border5').setAlpha(0);
+        borders.create(300, 1063, 'border5').setAlpha(0);
+        borders.create(1312, 840, 'border5').setAlpha(0);
+        borders.create(1312, 1063, 'border5').setAlpha(0);
+        borders.create(489, 447, 'border6').setAlpha(0);
+        borders.create(1123, 447, 'border6').setAlpha(0);
+        borders.create(489, 670, 'border6').setAlpha(0);
+        borders.create(1123, 670, 'border6').setAlpha(0);;
+        borders.create(380, 520, 'border7').setAlpha(0);
+        borders.create(1231, 520, 'border7').setAlpha(0);
+        borders.create(1231, 595, 'border7').setAlpha(0);
+        borders.create(380, 595, 'border7').setAlpha(0);
+        borders.create(328, 952, 'border8').setAlpha(0);
+        borders.create(1280, 952, 'border8').setAlpha(0);
+        borders.create(806, 1159, 'border9').setAlpha(0);
+        borders.create(280, 600, 'border5').setAlpha(0);//to cover middle section of map
+        borders.create(1335, 600, 'border5').setAlpha(0);//to cover middle section of map
+        
+        platforms = this.physics.add.staticGroup();
+        platforms.create(425, 145, 'wall1').setAlpha(0.5);
+        platforms.create(1180, 145, 'wall1').setAlpha(0.5);
+        platforms.create(632, 145, 'wall2').setAlpha(0.5);//rectangle piece
+        platforms.create(975, 145, 'wall2').setAlpha(0.5);
+        platforms.create(425, 278, 'wall3').setAlpha(0.5);//first oval on second row
+        platforms.create(1180, 278, 'wall3').setAlpha(0.5);
+        platforms.create(577, 390, 'wall4').setAlpha(0.5);//T-Pointing to the right - vertical piece
+        platforms.create(650, 392, 'wall5').setAlpha(0.5);//T pointing to the right - horizontal piece
+        platforms.create(1030, 389, 'wall7').setAlpha(0.5);//vertical piece
+        platforms.create(955, 386, 'wall6').setAlpha(0.5);//horizontal piece
+        platforms.create(578, 675, 'wall8').setAlpha(0.5); //vertical line above wall #15(subtract)
+        platforms.create(1032, 675, 'wall8').setAlpha(0.5); //vertical line above wall #15(subtract)
+        platforms.create(805, 278, 'wall9').setAlpha(0.5); // T pointing down wall9 and 10 - Horizontal
+        platforms.create(803, 350, 'wall10').setAlpha(0.5);// vertical
+        platforms.create(805, 726, 'wall9').setAlpha(0.5); // T pointing down wall9 and 10 - Horizontal
+        platforms.create(803, 800, 'wall10').setAlpha(0.5); // vertical
+        platforms.create(805, 955, 'wall9').setAlpha(0.5); // T pointing down wall9 and 10 - Horizontal
+        platforms.create(803, 1032, 'wall10').setAlpha(0.5); // vertical
+        
+        // Upside down L pointing to the left - Wall 11(Horizontal) and 12(vertical)
+        platforms.create(427, 841, 'wall11').setAlpha(0.5); 
+        platforms.create(464, 914, 'wall12').setAlpha(0.5); 
+        
+        // Upside down L pointing to the right - wall 13(vertical) and 14(Horizontal)
+        platforms.create(1141, 896, 'wall13').setAlpha(0.5);
+        platforms.create(1198, 841, 'wall14').setAlpha(0.5); // Horizontal
+        
+        //upside Down odd T on the left is wall#16(horizontal) and 17(vertical)
+        platforms.create(540, 1065, 'wall16').setAlpha(0.5);
+        platforms.create(579, 995, 'wall17').setAlpha(0.5);
+        //right side
+        platforms.create(1069, 1064, 'wall16').setAlpha(0.5);
+        platforms.create(1033, 996, 'wall17').setAlpha(0.5);
+        
+        //cage pieces LEFT SIDE - are wall# 18(vertical),21(Horizontal top),22(Horizontal bottom)
+        platforms.create(682, 569, 'wall18').setAlpha(0.5);
+        platforms.create(718, 493, 'wall21').setAlpha(0.5);
+        platforms.create(732, 625, 'wall22').setAlpha(0.5);
+        
+        //19(middle)
+        platforms.create(810, 625, 'wall19').setAlpha(0.5);
+
+        //RightSide - #20,22,23
+        platforms.create(926, 569, 'wall20').setAlpha(0.5);
+        platforms.create(880, 625, 'wall22').setAlpha(0.5);
+        platforms.create(890, 493, 'wall23').setAlpha(0.5);
+
+        platforms.create(634, 840, 'wall15').setAlpha(0.5);//Subtract sign next to L pieces
+        platforms.create(975, 840, 'wall15').setAlpha(0.5);//Subtract sign next to L pieces
+
+
+        // this.add.image(400, 300, 'star');
+        
+        player = this.physics.add.sprite(803, 900, 'player'); //this is the creation of the player sprite 
+        
+        player.setBounce(0/*.2*/); //when the player loads this gives it a small bounce effect when it lands on grass
+        player.setCollideWorldBounds(true); //this will keep the player from falling off of the game screen
+        this.cameras.main.setSize(window.innerWidth,window.innerHeight);
+        this.cameras.main.startFollow(player,false,0.1,0.1)
+        // this.cameras.main.startFollow(this.player);
+
+        //this.anims.create is used for spritesheets
+        // this.anims.create({
+        //     key: 'left',
+        //     frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
+        //     frameRate: 10,
+        //     repeat: -1
+        // });
+        
+        // this.anims.create({
+        //     key: 'turn',
+        //     frames: [{ key: 'dude', frame: 4 }],
+        //     frameRate: 20
+        // });
+        
+        // this.anims.create({
+        //     key: 'right',
+        //     frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+        //     frameRate: 10,
+        //     repeat:-1
+        // });
+        
+        this.physics.add.collider(player,platforms); //this checks for player and ground collision and stops the player at the top of the grass
+        cursors = this.input.keyboard.createCursorKeys(); //this lets me create the functionality for arrow Key movement
+        this.physics.add.collider(player,borders);
+
+        //create a group of dynamic stars (stars that will move when first created)
+        
+        orbs1 = this.physics.add.group({
+            key: 'orb',
+            repeat: 9, //repeat orb placement 9 times after the first orb which will give us a total of 10 orbs spaced 100px apart
+            setXY: { x: 342, y:70, stepX: 100}, //this positions the first orb at x:12px X y:0px. then 100px further it will place another one 
+        });
+        orbs2 = this.physics.add.group({//2nd row starting from left
+            key: 'orb',
+            repeat: 2, 
+            setXY: { x: 338, y:140, stepX: 200},  
+        });
+        orbs3 = this.physics.add.group({//second row
+            key: 'orb',
+            // repeat: 1, 
+            setXY: { x: 842, y:140, stepX: 230},  
+        });
+        orbs4 = this.physics.add.group({//second row
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 1080, y:140, stepX: 200},  
+        });
+        orbs5 = this.physics.add.group({
+            key: 'orb',
+            repeat: 10, 
+            setXY: { x: 342, y:210, stepX: 92},  
+        });
+        orbs6 = this.physics.add.group({//4th row of orbs
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 342, y:280, stepX: 180},  
+        });
+        orbs7 = this.physics.add.group({//4th row of orbs
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 612, y:280, stepX: 360},  
+        });
+        orbs8 = this.physics.add.group({//4th row of orbs
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 1080, y:280, stepX: 180},  
+        });
+        orbs9 = this.physics.add.group({
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 342, y:347, stepX: 94},  
+        });
+        orbs10 = this.physics.add.group({
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 891, y:347, stepX: 94},  
+        });
+        orbs11 = this.physics.add.group({
+            key: 'orb',
+            repeat: 6, 
+            setXY: { x: 522, y:428, stepX: 93},  
+        });
+        orbs12 = this.physics.add.group({
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 522, y:487, stepX: 92},  
+        });
+        orbs13 = this.physics.add.group({
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 981, y:487, stepX: 92},  
+        });
+        orbs14 = this.physics.add.group({//passing through cage
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 522, y:557, stepX: 90},  
+        });
+        orbs15 = this.physics.add.group({//passing through cage
+            key: 'orb',
+            repeat: 1, 
+            setXY: { x: 981, y:557, stepX: 90},  
+        });
+        orbs16 = this.physics.add.group({
+            key: 'orb',
+            repeat: 6, 
+            setXY: { x: 522, y:684, stepX: 93},  
+        });
+        orbs17 = this.physics.add.group({
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 342, y:775, stepX: 90},  
+        });
+        orbs18 = this.physics.add.group({
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 891, y:775, stepX: 90},  
+        });
+        orbs19 = this.physics.add.group({//line passing through player
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 342, y:914, stepX: 90},  
+        });
+        orbs20 = this.physics.add.group({//line passing through player
+            key: 'orb',
+            repeat: 5, 
+            setXY: { x: 891, y:914, stepX: 73}, 
+        });
+        orbs21 = this.physics.add.group({
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 342, y:1010, stepX: 92}, //92
+        });
+        orbs22 = this.physics.add.group({ //second half of orbs21
+            key: 'orb',
+            repeat: 4, 
+            setXY: { x: 894, y:1010, stepX: 92}, 
+        });
+        orbs23 = this.physics.add.group({
+            key: 'orb',
+            repeat: 10, //repeat star placement 10 times after the first star which will give us a total of 11 stars spaced 70px apart
+            setXY: { x: 342, y:1117, stepX: 90}, //this positions the first star at x:12px X y:0px. then 70px further it will place another one 
+        });
+
+        //test for line 316
+        // orbs24 = this.physics.add.group({
+        //     key: 'orb',
+        //     repeat: 19, 
+        //     setXY: { x: 342, y:1050, stepX: 50}, //92
+        // });        
+        //  this.physics.add.overlap(orbs24,platforms,removeOrb,null,this);//to help with orb placement and avoid placing on platforms
+        //  function removeOrb(orb,platforms){
+        //     orb.disableBody(true,true)
+        //  };
+            
+        let orbsArry=[orbs1,orbs2,orbs3,orbs4,orbs5,orbs6,orbs7,orbs8,orbs9,orbs10,orbs11,orbs12,orbs13,orbs14,orbs15,orbs16,orbs17,orbs18,orbs19,orbs20,orbs21,orbs22,orbs23]
+        // this.physics.add.collider(orbs16, platforms);//this will keep the stars from falling past the platform(gras) and off the screen
+            for(let i=0;i<orbsArry.length;i++){
+                this.physics.add.overlap(player,orbsArry[i],collectOrb,null, this)//this tells phaser to look for any collisions between the player and stars
+            }
+        function collectOrb(player, orb){//when a collision is found the player and star get passed in and the stars body is disabled
+            orb.disableBody(true,true)//showing the star collection animation
+            score += 10;
+            scoreText.setText('Score: ' + score);
+            levelText.setText('Level: ' + level);
+            if (score === maxScore || score === maxScore2){//countActive checks to see how many stars are left. 
+                // location.reload()
+                // alert('Congratulations You Win! Click "OK" to Play again.')
+                level++;
+                maxScore2 = maxScore * level;
+                console.log(maxScore)
+                for(let i = 0;i<orbsArry.length; i++){
+                    orbsArry[i].children.iterate(function (child) {//if equal to 0 then we re-enable all the stars and
+                        child.enableBody(true, child.x, child.y, true, true);//reset all orbs to original positions
+                    });
+                }
+                for(let i = 0;i<enemyArray.length;i++){
+                    enemyArray[i].setVelocity(speed+=5)
+                }
+            }
+        }
+
+        //scoreText Set Up -> [16,16] sets the position for the score counter, font, fontStyle PhaserDefault is Courier
+        scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFFFFF'});
+        levelText = this.add.text(16, 50, 'Level: 1', { fontSize: '32px', fill: '#FFFFFF'});
+
+        //create dynamic bomb/enemy group
+        enemies = this.physics.add.group();
+        let enemy1 = enemies.create(720, 590, 'enemy1')
+        let enemy2 = enemies.create(789, 595, 'enemy2')
+        let enemy3 = enemies.create(838, 595, 'enemy3')
+        let enemy4 = enemies.create(890, 590, 'enemy4')
+        const enemyArray = [enemy1,enemy2,enemy3,enemy4];
+        // setTimeout(() => { enemy4.setVelocity(50) }, 28000);//this will give the bomb a random speed
+        for(let i = 0; i<enemyArray.length;i++){
+            // enemyArray[i].setVelocity(speed);
+            enemyArray[i].setVelocityX(speed);
+            enemyArray[i].setVelocityY(speed);
+            enemyArray[i].setBounce(1);
+            enemyArray[i].setCollideWorldBounds(true)
+        }
+
+        // enemy1.setVelocity(60); enemy2.setVelocity(60); enemy3.setVelocity(60); enemy4.setVelocity(60)
+        // enemy1.setBounce(1); enemy2.setBounce(1); enemy3.setBounce(1); enemy4.setBounce(1);
+        // enemy1.setCollideWorldBounds(true); enemy2.setCollideWorldBounds(true); enemy3.setCollideWorldBounds(true); enemy4.setCollideWorldBounds(true);     
+
+        this.physics.add.collider(enemies, borders);
+        this.physics.add.collider(enemies, platforms);//previously(bombs,platforms)
+        this.physics.add.collider(player, enemies, hitEnemy, null, this); // before: (player, bombs, hitBomb, null, this)
+
+        function hitEnemy(player, enemy){
+            this.physics.pause();
+            player.setTint(0xff0000);
+            // player.anims.play('turn');
+            // gameOver = true;
+            setTimeout(() => {
+                player.disableBody(true,true);
+                player.setTint();
+                player.enableBody(true,803,900,true,true)
+                this.physics.resume();
+            }, 2000);
+        }
+    }
+
+    function update ()
+    {
+        if (cursors.left.isDown)
+        {
+            player.setVelocityX(-160);
+
+            // player.anims.play('left', true);
+        }
+        else if (cursors.right.isDown)
+        {
+            player.setVelocityX(160);
+
+            // player.anims.play('right', true);
+        }
+        else
+        {
+            player.setVelocityX(0);
+
+            // player.anims.play('turn');
+        }
+
+        if (cursors.up.isDown /*&& player.body.touching.down*/)
+        {
+            player.setVelocityY(-160);
+        }
+        else if(cursors.down.isDown)
+        {
+            player.setVelocityY(160);
+        }
+    }
+
+</script>
+
+</body>
+</html>
